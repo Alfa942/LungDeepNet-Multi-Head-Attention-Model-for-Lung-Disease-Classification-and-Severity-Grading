@@ -180,16 +180,31 @@ app.post("/api/predict-image", async (req, res) => {
     }
 
     // Try executing local PyTorch inference via python/infer.py on CPU
-    const pythonScript = path.join(process.cwd(), "python", "infer.py");
-    const checkpointPath = path.join(process.cwd(), "checkpoints", "best_model.pth");
+    const candidatesScript = [
+      path.join(process.cwd(), "python", "infer.py"),
+      path.join(__dirname, "python", "infer.py"),
+      path.join(process.cwd(), "LungDeepNet-Multi-Head-Attention-Model-for-Lung-Disease-Classification-and-Severity-Grading", "python", "infer.py"),
+    ];
+    const pythonScript = candidatesScript.find(p => fs.existsSync(p)) || candidatesScript[0];
+
+    const candidatesCheckpoint = [
+      path.join(process.cwd(), "checkpoints", "best_model.pth"),
+      path.join(__dirname, "checkpoints", "best_model.pth"),
+      path.join(process.cwd(), "LungDeepNet-Multi-Head-Attention-Model-for-Lung-Disease-Classification-and-Severity-Grading", "checkpoints", "best_model.pth"),
+    ];
+    const checkpointPath = candidatesCheckpoint.find(p => fs.existsSync(p)) || candidatesCheckpoint[0];
 
     if (fs.existsSync(pythonScript)) {
       try {
         tempFilePath = path.join(os.tmpdir(), `xray_${Date.now()}_${Math.random().toString(36).substring(7)}.txt`);
         fs.writeFileSync(tempFilePath, image, "utf-8");
 
+        const scriptDir = path.dirname(pythonScript);
+        const projectDir = path.dirname(scriptDir);
+
         const { stdout } = await execFileAsync("python", [pythonScript, "--image", tempFilePath, "--checkpoint", checkpointPath], {
-          timeout: 35000,
+          cwd: fs.existsSync(projectDir) ? projectDir : process.cwd(),
+          timeout: 45000,
           maxBuffer: 15 * 1024 * 1024,
         });
 
