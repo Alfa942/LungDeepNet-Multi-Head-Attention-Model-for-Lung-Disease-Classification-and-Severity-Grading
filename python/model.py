@@ -1,110 +1,182 @@
 """
-LungDeepNet Architecture
-DenseNet121 Shared Feature Extractor + Dual-Head (Spatial & Channel) Attention + Multi-Task Heads
+LungDeepNet Architecture v2 — ConvNeXt-V2 Base Backbone
+========================================================
+Replaces DenseNet121 with ConvNeXt-V2 Base (1024-channel output) — the 2024
+state-of-the-art for chest X-ray classification (AUC ~0.85+, vs DenseNet121's ~0.75).
+
+ConvNeXt-V2 uses:
+  - Fully-Convolutional Masked Autoencoder (FCMAE) self-supervised pretraining
+  - Global Response Normalization (GRN) layers for feature inter-channel contrast
+  - Depthwise separable 7×7 convolutions + inverted bottleneck (Transformer-like design)
+  - Superior texture/structural feature extraction for subtle pathologies
+
+Architecture:
+  Shared Backbone : ConvNeXt-V2 Base  (stages 1-4 → 1024-channel feature map, 7×7 spatial)
+  Dual-Head Attention:
+    * Spatial Attention  → Localises WHERE lesions are (feeds Classification)
+    * Channel Attention  → Weights WHICH channels encode disease burden (feeds Severity)
+  Multi-Task Heads:
+    * Classification Head  : 4-class softmax  (Normal, Pneumonia, Emphysema, Pulmonary Fibrosis)
+    * Severity Head        : Continuous [0,1] sigmoid regression
 """
 
 import torch
 import torch.nn as nn
-import torchvision.models as models
+import timm
 from attention import SpatialAttention, ChannelAttention
 
 
 class LungDeepNet(nn.Module):
     """
-    LungDeepNet: Multi-Task Chest X-Ray Analysis System.
-    - Shared Backbone: DenseNet121 (DenseBlock 1-4, 1024 feature channels)
-    - Dual-Head Attention:
-        * Spatial Attention: Focuses on 'WHERE' abnormal lesions are located (feeds Classification)
-        * Channel Attention: Focuses on 'WHICH' feature channels represent disease-specific burden (feeds Severity)
-    - Multi-Task Outputs:
-        * Disease Classification: 4 classes (Normal, Pneumonia, Emphysema, Pulmonary Fibrosis)
-        * Radiographic Severity/Burden: Continuous score in [0.0, 1.0]
+    LungDeepNet v2: Multi-Task Chest X-Ray Analysis System.
+    Backbone: ConvNeXt-V2 Base (1024 feature channels at 7×7 spatial resolution).
+    Dual-Head: Spatial + Channel CBAM-style Attention.
+    Outputs: 4-class disease classification + continuous severity score.
     """
-    def __init__(self, num_classes=4, reduction_ratio=16, dropout_rate=0.25, pretrained=True):
+
+    # ConvNeXt-V2 Base outputs 1024 channels from its final stage.
+    BACKBONE_OUT_CHANNELS = 1024
+
+    def __init__(
+        self,
+        num_classes: int = 4,
+        reduction_ratio: int = 16,
+        dropout_rate: float = 0.30,
+        pretrained: bool = True,
+    ):
         super(LungDeepNet, self).__init__()
-        
-        # 1. Pretrained DenseNet121 Shared Backbone
-        weights = models.DenseNet121_Weights.IMAGENET1K_V1 if pretrained else None
-        densenet = models.densenet121(weights=weights)
-        self.features = densenet.features  # Outputs (B, 1024, 7, 7) for 224x224 input
-        self.in_channels = 1024
-        
-        # 2. Dual-Head Attention Mechanisms
-        # Spatial Attention Head for Pathology Localization & Disease Discrimination
+
+        # ------------------------------------------------------------------ #
+        # 1. ConvNeXt-V2 Base Backbone (pretrained on ImageNet-22k / FCMAE)  #
+        # ------------------------------------------------------------------ #
+        # 'convnextv2_base' is available in timm ≥0.9.5                     #
+        # features_only=True → returns (B, 1024, 7, 7) for 224×224 input    #
+        backbone = timm.create_model(
+            "convnextv2_base",
+            pretrained=pretrained,
+            features_only=True,   # Return intermediate feature maps
+            out_indices=(3,),     # Only stage-4 output: (B, 1024, 7, 7)
+        )
+        # Wrap so self.features(x) returns a single tensor, not a list
+        self._backbone = backbone
+        self.in_channels = self.BACKBONE_OUT_CHANNELS
+
+        # ------------------------------------------------------------------ #
+        # 2. Dual-Head Attention Mechanisms                                   #
+        # ------------------------------------------------------------------ #
+        # Spatial Attention: focuses on pathological spatial coordinates
         self.spatial_attention = SpatialAttention(kernel_size=7)
-        
-        # Channel Attention Head for Disease-Aware Radiographic Severity/Burden
-        self.channel_attention = ChannelAttention(in_channels=self.in_channels, reduction_ratio=reduction_ratio)
-        
-        # 3. Global Pooling & Regularization
+
+        # Channel Attention: focuses on disease-discriminative feature channels
+        self.channel_attention = ChannelAttention(
+            in_channels=self.in_channels, reduction_ratio=reduction_ratio
+        )
+
+        # ------------------------------------------------------------------ #
+        # 3. Pooling & Regularisation                                         #
+        # ------------------------------------------------------------------ #
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.dropout = nn.Dropout(p=dropout_rate)
-        
-        # Head 1: Disease Classification Head (Multi-class cross-entropy)
+
+        # ------------------------------------------------------------------ #
+        # 4. Task Heads                                                        #
+        # ------------------------------------------------------------------ #
+        # Head 1 — Disease Classification (4-class cross-entropy)
         self.classification_head = nn.Sequential(
             nn.Linear(self.in_channels, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(inplace=True),
+            nn.LayerNorm(512),          # LayerNorm matches ConvNeXt design
+            nn.GELU(),                  # GELU activation used throughout ConvNeXt
             nn.Dropout(p=dropout_rate),
-            nn.Linear(512, num_classes)
+            nn.Linear(512, num_classes),
         )
-        
-        # Head 2: Radiographic Severity Head (Continuous regression [0.0, 1.0])
+
+        # Head 2 — Radiographic Severity (continuous [0, 1] regression)
         self.severity_head = nn.Sequential(
             nn.Linear(self.in_channels, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(inplace=True),
+            nn.LayerNorm(256),
+            nn.GELU(),
             nn.Dropout(p=dropout_rate),
             nn.Linear(256, 1),
-            nn.Sigmoid()  # Restricts predicted burden strictly to continuous [0.0, 1.0] range
+            nn.Sigmoid(),
         )
-        
-    def forward(self, x):
+
+    # ---------------------------------------------------------------------- #
+    # Forward Pass                                                             #
+    # ---------------------------------------------------------------------- #
+    def forward(self, x: torch.Tensor) -> dict:
         """
-        Forward pass through shared representation and dual attention heads.
         Args:
-            x (torch.Tensor): Input batch of shape (B, 3, 224, 224)
+            x: Input batch (B, 3, 224, 224)
         Returns:
-            dict with classification logits, continuous severity score, and attention maps.
+            dict:
+              'cls_logits'      – (B, num_classes)
+              'severity'        – (B, 1)
+              'spatial_map'     – (B, 1, 7, 7)
+              'channel_weights' – (B, 1024, 1, 1)
+              'shared_features' – (B, 1024, 7, 7)
         """
-        # Shared high-dimensional convolutional representation: (B, 1024, 7, 7)
-        feat = self.features(x)
-        
-        # Spatial Attention Branch -> Focus on pathological coordinates (lesions)
+        # ConvNeXt-V2 feature extraction → (B, 1024, 7, 7)
+        feat_list = self._backbone(x)
+        feat = feat_list[0]   # Stage-4 output
+
+        # --- Spatial Attention Branch (WHERE lesions are) ---
         spatial_map = self.spatial_attention(feat)      # (B, 1, 7, 7)
-        feat_spatial = feat * spatial_map               # Element-wise spatial gating
-        
-        # Channel Attention Branch -> Focus on disease-aware semantic channels
+        feat_spatial = feat * spatial_map               # Spatial gating
+
+        # --- Channel Attention Branch (WHICH channels matter for severity) ---
         channel_weights = self.channel_attention(feat)  # (B, 1024, 1, 1)
-        feat_channel = feat * channel_weights           # Element-wise channel gating
-        
-        # 1. Classification Path
+        feat_channel = feat * channel_weights           # Channel gating
+
+        # --- Classification Path ---
         pooled_cls = self.global_pool(feat_spatial).flatten(1)
         pooled_cls = self.dropout(pooled_cls)
         cls_logits = self.classification_head(pooled_cls)
-        
-        # 2. Severity Path
+
+        # --- Severity Path ---
         pooled_sev = self.global_pool(feat_channel).flatten(1)
         pooled_sev = self.dropout(pooled_sev)
         severity_score = self.severity_head(pooled_sev)
-        
+
         return {
-            'cls_logits': cls_logits,
-            'severity': severity_score,
-            'spatial_map': spatial_map,
-            'channel_weights': channel_weights,
-            'shared_features': feat
+            "cls_logits": cls_logits,
+            "severity": severity_score,
+            "spatial_map": spatial_map,
+            "channel_weights": channel_weights,
+            "shared_features": feat,
         }
 
-    def freeze_backbone(self, freeze=True):
-        """Freeze DenseNet121 convolutional layers for Phase 1 warmup."""
-        for param in self.features.parameters():
+    # ---------------------------------------------------------------------- #
+    # Freeze / Unfreeze Utilities for Multi-Phase Training                    #
+    # ---------------------------------------------------------------------- #
+    def freeze_backbone(self, freeze: bool = True):
+        """Freeze all ConvNeXt-V2 backbone weights (Phase 1 warmup)."""
+        for param in self._backbone.parameters():
             param.requires_grad = not freeze
 
-    def unfreeze_denseblock4(self):
-        """Unfreeze DenseBlock 4 and Norm5 for Phase 2 fine-tuning."""
-        for name, param in self.features.named_parameters():
-            if 'denseblock4' in name or 'norm5' in name:
+    def unfreeze_stage4(self):
+        """Unfreeze only Stage 4 (deepest ConvNeXt blocks) for Phase 2."""
+        for param in self._backbone.parameters():
+            param.requires_grad = False
+        # timm's ConvNeXtV2 names stage-4 blocks as 'stages.3'
+        for name, param in self._backbone.named_parameters():
+            if "stages.3" in name or "norm" in name:
                 param.requires_grad = True
-            else:
-                param.requires_grad = False
+
+    def unfreeze_stages3_4(self):
+        """Unfreeze Stage 3 + Stage 4 for Phase 3 deep fine-tuning."""
+        for param in self._backbone.parameters():
+            param.requires_grad = False
+        for name, param in self._backbone.named_parameters():
+            if "stages.2" in name or "stages.3" in name or "norm" in name:
+                param.requires_grad = True
+
+    def unfreeze_full_backbone(self):
+        """Unfreeze entire backbone for maximum end-to-end fine-tuning."""
+        for param in self._backbone.parameters():
+            param.requires_grad = True
+
+    # Convenience: target layer for Grad-CAM (last ConvNeXt norm layer)
+    def get_gradcam_target_layer(self):
+        """Returns the last normalisation layer for Grad-CAM hook registration."""
+        return self._backbone.norm_pre if hasattr(self._backbone, "norm_pre") else \
+               list(self._backbone.children())[-1]
