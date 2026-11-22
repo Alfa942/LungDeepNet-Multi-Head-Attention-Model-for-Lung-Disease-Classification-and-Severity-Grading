@@ -35,9 +35,11 @@ def create_bundle():
                         zipf.write(full_path, rel_path)
                         file_count += 1
                         
-        # 2. Add all data files (images + metadata.csv)
+        # 2. Add baseline seed data files (images + metadata.csv), skipping multi-GB large datasets
         if os.path.exists(DATA_DIR):
-            for root, _, files in os.walk(DATA_DIR):
+            skip_dirs = {'dataset_40k', 'nih_10k'}
+            for root, dirs, files in os.walk(DATA_DIR):
+                dirs[:] = [d for d in dirs if d not in skip_dirs]
                 for f in files:
                     if not f.startswith('.'):
                         full_path = os.path.join(root, f)

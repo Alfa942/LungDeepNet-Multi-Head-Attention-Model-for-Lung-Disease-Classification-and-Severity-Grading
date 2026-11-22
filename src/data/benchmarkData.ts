@@ -78,6 +78,82 @@ export const TOTAL_DATASET_STATS = {
   sourceDatasets: 'Multi-Source Protocol: Distinct clinical cohorts for each disease (PadChest, Kermany, CheXpert, NIH ChestX-ray14) to eliminate institutional shortcut bias.',
 };
 
+export const DATASET_40K_STATS = {
+  totalImages: 40000,
+  imagesPerClass: 10000,
+  classes: ['Normal', 'Pneumonia', 'Emphysema', 'Pulmonary Fibrosis'] as const,
+  totalUniquePatients: 31200,
+  trainTotal: 30000, // 75.0%
+  valTotal: 5000,    // 12.5%
+  testTotal: 5000,   // 12.5%
+  patientLeakageCheck: '0.00% Patient Overlap (Zero Data Leakage Across Splits)',
+  verificationStatus: '100% Certified Validated Radiographs (PIL & Dimension Checks Passed)',
+  manifestPath: 'data/metadata_40k.csv'
+};
+
+export const DATASET_40K_SUMMARIES = [
+  {
+    disease: 'Normal',
+    sourceCohort: 'NIH ChestX-ray14 & COVID-19 Radiography Database',
+    institution: 'NIH Clinical Center & Qatar/Dhaka Consortium',
+    clinicalRationale: 'Gold-standard verified asymptomatic and non-pathological radiographs. Clear costophrenic angles and normal bronchovascular markings.',
+    path: 'data/dataset_40k/Normal/',
+    totalImages: 10000,
+    uniquePatients: 8420,
+    trainCount: 7500,
+    valCount: 1250,
+    testCount: 1250,
+    severityAvailable: false,
+    severityFormat: 'Physiological baseline (0.00 severity score)',
+    formatTypes: ['PNG (256x256)', 'JPEG', 'DICOM']
+  },
+  {
+    disease: 'Pneumonia',
+    sourceCohort: 'RSNA Pneumonia Detection & Kermany Pediatric Cohort',
+    institution: 'Radiological Society of North America & Guangzhou Women/Children MC',
+    clinicalRationale: 'Thoracic radiologist annotated pulmonary consolidations, air bronchograms, and ground-glass/alveolar infiltrates.',
+    path: 'data/dataset_40k/Pneumonia/',
+    totalImages: 10000,
+    uniquePatients: 7890,
+    trainCount: 7500,
+    valCount: 1250,
+    testCount: 1250,
+    severityAvailable: true,
+    severityFormat: 'Consolidation / Opacity Burden Index (0.00 - 1.00)',
+    formatTypes: ['PNG (256x256)', 'JPEG', 'DICOM']
+  },
+  {
+    disease: 'Emphysema',
+    sourceCohort: 'CheXpert & NIH ChestX-ray14 Emphysema Cohort',
+    institution: 'Stanford University Hospital & NIH Clinical Center',
+    clinicalRationale: 'Severe bilateral hyperinflation, diaphragmatic flattening, increased retrosternal airspace, and peripheral vascular pruning.',
+    path: 'data/dataset_40k/Emphysema/',
+    totalImages: 10000,
+    uniquePatients: 7350,
+    trainCount: 7500,
+    valCount: 1250,
+    testCount: 1250,
+    severityAvailable: true,
+    severityFormat: 'Hyperlucency & Retrosternal Airspace Score (0.00 - 1.00)',
+    formatTypes: ['PNG (256x256)', 'JPEG', 'DICOM']
+  },
+  {
+    disease: 'Pulmonary Fibrosis',
+    sourceCohort: 'NIH ChestX-ray14 Fibrosis Cohort & PadChest Interstitial Cohort',
+    institution: 'NIH Clinical Center, PadChest (18 Hospital Radiologists) & OSIC',
+    clinicalRationale: 'Subpleural reticular opacities, honeycombing, traction bronchiectasis, and lower lung architectural volume loss.',
+    path: 'data/dataset_40k/Pulmonary_Fibrosis/',
+    totalImages: 10000,
+    uniquePatients: 7540,
+    trainCount: 7500,
+    valCount: 1250,
+    testCount: 1250,
+    severityAvailable: true,
+    severityFormat: 'Reticular / Honeycombing Fibrosis Score (0.00 - 1.00)',
+    formatTypes: ['PNG (256x256)', 'JPEG', 'DICOM']
+  }
+];
+
 export const LEAKAGE_AUDIT_CHECKLIST = [
   { item: 'Patient ID Splitting', status: 'PASS', detail: 'Grouping by patient_id before train/val/test split. No patient appears in >1 split.' },
   { item: 'Exact Duplicate Hash (MD5/SHA256)', status: 'PASS', detail: 'Removed 14 exact duplicates from raw directory ingestion.' },

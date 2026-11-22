@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { 
   DATASET_SUMMARIES, 
   TOTAL_DATASET_STATS, 
+  DATASET_40K_STATS,
+  DATASET_40K_SUMMARIES,
   LEAKAGE_AUDIT_CHECKLIST 
 } from '../data/benchmarkData';
 import { 
@@ -26,6 +28,10 @@ import {
 export const DatasetExplorer: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCohort, setSelectedCohort] = useState<string>('ALL');
+  const [cohortScale, setCohortScale] = useState<'10k' | '40k'>('40k');
+
+  const currentStats = cohortScale === '40k' ? DATASET_40K_STATS : TOTAL_DATASET_STATS;
+  const currentSummaries = cohortScale === '40k' ? DATASET_40K_SUMMARIES : DATASET_SUMMARIES;
 
   // Sample rows from unified_metadata.csv for interactive inspection
   const sampleMetadataRows = [
@@ -55,17 +61,46 @@ export const DatasetExplorer: React.FC = () => {
       
       {/* Header Overview */}
       <div className="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 space-y-4 shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-cyan-500/20 text-cyan-400 rounded-xl">
-            <Database className="w-6 h-6" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-cyan-500/20 text-cyan-400 rounded-xl">
+              <Database className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white tracking-tight">
+                Dataset Inspection, Harmonization & Leakage Audit
+              </h2>
+              <p className="text-xs text-slate-400">
+                {cohortScale === '40k' 
+                  ? '40,000 Verified Radiographs: Exactly 10,000 per class (Normal, Pneumonia, Emphysema, Pulmonary Fibrosis).' 
+                  : 'Harmonized across 4 cohorts: Normal, Pneumonia, Emphysema, and Pulmonary Fibrosis (10,025 images).'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white tracking-tight">
-              Dataset Inspection, Harmonization & Leakage Audit
-            </h2>
-            <p className="text-xs text-slate-400">
-              Harmonized across 4 cohorts: Normal, Pneumonia, Emphysema, and Pulmonary Fibrosis (10,025 images, 8,350 unique patients).
-            </p>
+
+          {/* Scale Toggle */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0 font-mono text-xs">
+            <button
+              onClick={() => setCohortScale('40k')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                cohortScale === '40k'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>40k Scaled Cohort</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-900 text-cyan-300">10k/class</span>
+            </button>
+            <button
+              onClick={() => setCohortScale('10k')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                cohortScale === '10k'
+                  ? 'bg-cyan-500 text-slate-950 shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>10k Benchmark</span>
+            </button>
           </div>
         </div>
 
@@ -73,11 +108,11 @@ export const DatasetExplorer: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 font-mono">
           <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
             <span className="text-[10px] text-slate-500 block uppercase">Total Images</span>
-            <span className="text-xl font-bold text-white">{TOTAL_DATASET_STATS.totalImages.toLocaleString()}</span>
+            <span className="text-xl font-bold text-white">{currentStats.totalImages.toLocaleString()}</span>
           </div>
           <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
             <span className="text-[10px] text-slate-500 block uppercase">Unique Patients</span>
-            <span className="text-xl font-bold text-cyan-400">{TOTAL_DATASET_STATS.totalUniquePatients.toLocaleString()}</span>
+            <span className="text-xl font-bold text-cyan-400">{currentStats.totalUniquePatients.toLocaleString()}</span>
           </div>
           <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
             <span className="text-[10px] text-slate-500 block uppercase">Patient Leakage</span>
@@ -131,7 +166,7 @@ export const DatasetExplorer: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 text-slate-300">
-              {DATASET_SUMMARIES.map((c) => (
+              {currentSummaries.map((c) => (
                 <tr key={c.disease} className="hover:bg-slate-800/30 transition-colors">
                   <td className="p-3 font-bold text-white whitespace-nowrap">
                     {c.disease}
