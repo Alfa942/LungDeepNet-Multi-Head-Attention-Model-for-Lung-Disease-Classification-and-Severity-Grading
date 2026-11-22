@@ -2,5 +2,5 @@
   "name": "LungDeepNet - Multi-Task Chest X-Ray Analysis",
   "description": "Multi-Task Chest X-Ray Analysis System using DenseNet121, Dual-Head Spatial & Channel Attention, Disease-Aware Severity Estimation, and Explainable Localization.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

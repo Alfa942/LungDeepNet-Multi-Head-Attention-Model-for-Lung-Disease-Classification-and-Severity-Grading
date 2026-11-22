@@ -6,7 +6,13 @@ Implements Grad-CAM, Grad-CAM++, LayerCAM, and Spatial Attention Map extraction.
 import numpy as np
 import torch
 import torch.nn.functional as F
-import cv2
+
+try:
+    import cv2
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
+    from PIL import Image
 
 
 class ExplainabilityEngine:
@@ -86,7 +92,13 @@ class ExplainabilityEngine:
 
     def _normalize_cam(self, cam_tensor):
         cam = cam_tensor.squeeze().cpu().numpy()
-        cam = cv2.resize(cam, (224, 224), interpolation=cv2.INTER_LINEAR)
+        if HAS_CV2:
+            cam = cv2.resize(cam, (224, 224), interpolation=cv2.INTER_LINEAR)
+        else:
+            # Resize with PIL without requiring OpenCV
+            pil_img = Image.fromarray((cam * 255).astype(np.uint8))
+            resized = pil_img.resize((224, 224), Image.Resampling.BILINEAR)
+            cam = np.array(resized, dtype=np.float32) / 255.0
         cam_min, cam_max = np.min(cam), np.max(cam)
         if cam_max > cam_min:
             cam = (cam - cam_min) / (cam_max - cam_min)

@@ -4,41 +4,40 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { GoogleGenAI, Type } from "@google/genai";
+import { execFile, execSync } from "child_process";
+import os from "os";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const getAppDir = () => {
+  try {
+    if (typeof import.meta !== "undefined" && import.meta?.url) {
+      return path.dirname(fileURLToPath(import.meta.url));
+    }
+  } catch {}
+  return process.cwd();
+};
+const __dirname = getAppDir();
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "50mb" }));
 
-// Lazy Google Gen AI client with required User-Agent
-let aiClient: GoogleGenAI | null = null;
-function getAI(): GoogleGenAI | null {
-  if (!aiClient && process.env.GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
-  return aiClient;
-}
-
 // API routes
 app.get("/api/health", (req, res) => {
+  const checkpointPath = path.join(process.cwd(), "checkpoints", "best_model.pth");
+  const hasLocalCheckpoint = fs.existsSync(checkpointPath);
   res.json({
     status: "ok",
     app: "LungDeepNet",
-    version: "1.0.0-research",
-    hasApiKey: Boolean(process.env.GEMINI_API_KEY)
+    version: "2.0.0-local-offline",
+    mode: "100% Offline Local Model",
+    hasLocalCheckpoint,
+    checkpointStatus: hasLocalCheckpoint ? "Custom Weights Loaded (checkpoints/best_model.pth)" : "PyTorch Base Model (Ready for Colab Training)"
   });
 });
 
@@ -88,7 +87,7 @@ app.get("/api/python-file/:filename", (req, res) => {
   }
 });
 
-// Gemini-Powered Python Training Code & Colab Notebook Generator
+// Local Python Training Code & Colab Notebook Generator (100% Offline)
 app.post("/api/gemini/generate-training-code", async (req, res) => {
   try {
     const {
@@ -96,122 +95,12 @@ app.post("/api/gemini/generate-training-code", async (req, res) => {
       datasetName = "Multi-Disease Chest Radiographs (Normal, Pneumonia, Fibrosis, Emphysema)",
       gpuDevice = "cuda:0",
       useMixedPrecision = true,
-      batchSize = 32,
+      batchSize = 16,
       learningRate = 0.0001,
-      epochs = 10,
-      customPrompt = ""
+      epochs = 25,
     } = req.body;
 
-    const ai = getAI();
-
-    // System prompt enforcing strict GPU usage and decoupled Train/Evaluate design
-    const systemPrompt = `You are a Senior Deep Learning Engineer & PyTorch Expert.
-You generate production-grade, bug-free Python code specifically designed to run on Google Colab with NVIDIA GPU acceleration (Tesla T4, V100, or A100).
-
-MANDATORY RULES:
-1. TRAIN AND EVALUATE SEPARATELY:
-   - The Training Script ('trainCode') must ONLY perform data loading, warmup/training epochs, mixed precision (torch.cuda.amp.autocast + GradScaler), validation tracking, and save the best checkpoint to 'checkpoints/best_model.pth'. It must NEVER perform the final test evaluation.
-   - The Evaluation Script ('evaluateCode') must be completely standalone. It loads 'checkpoints/best_model.pth', sets model.eval(), uses torch.no_grad(), runs inference strictly on the held-out test cohort, and calculates comprehensive metrics: Accuracy, Macro F1, AUROC, Sensitivity, Specificity, Confusion Matrix, and Regression MAE/RMSE (for continuous severity).
-2. GPU ACCELERATION IN GOOGLE COLAB:
-   - Include explicit GPU detection and assertions ('torch.cuda.is_available()').
-   - Use 'device = torch.device("cuda" if torch.cuda.is_available() else "cpu")'.
-   - Use mixed precision FP16 with torch.cuda.amp.autocast() and GradScaler().
-   - Add torch.cuda.empty_cache() to prevent OOM errors.
-3. GOOGLE COLAB NOTEBOOK CELLS:
-   - Provide ready-to-execute Colab cells. The first cell MUST check GPU hardware via '!nvidia-smi' and print GPU device properties.
-   - Decouple Training into its own cell, and Evaluation into its own cell.`;
-
-    const userPromptText = `Generate Python code for Google Colab with GPU enabled:
-- Architecture: ${modelArchitecture}
-- Dataset: ${datasetName}
-- Target Hardware: Google Colab GPU (${gpuDevice}, AMP Mixed Precision: ${useMixedPrecision})
-- Hyperparameters: Batch Size ${batchSize}, Learning Rate ${learningRate}, Epochs ${epochs}
-- Core Constraint: Decouple Training ('train.py') and Evaluation ('evaluate.py') completely. Save checkpoint during training; load checkpoint during evaluation.
-${customPrompt ? `Additional User Request: ${customPrompt}` : ""}`;
-
-    if (ai) {
-      try {
-        const response = await ai.models.generateContent({
-          model: "gemini-4-hydrogen",
-          contents: userPromptText,
-          config: {
-            systemInstruction: systemPrompt,
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                summary: { type: Type.STRING },
-                trainCode: { type: Type.STRING },
-                evaluateCode: { type: Type.STRING },
-                colabGpuCheckCode: { type: Type.STRING },
-                gpuInstructions: {
-                  type: Type.OBJECT,
-                  properties: {
-                    minimumVram: { type: Type.STRING },
-                    recommendedGpu: { type: Type.STRING },
-                    instructions: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                  },
-                  required: ["minimumVram", "recommendedGpu", "instructions"],
-                },
-                colabNotebookCells: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      cell_type: { type: Type.STRING, enum: ["markdown", "code"] },
-                      source: { type: Type.STRING },
-                    },
-                    required: ["cell_type", "source"],
-                  },
-                },
-              },
-              required: [
-                "summary",
-                "trainCode",
-                "evaluateCode",
-                "colabGpuCheckCode",
-                "gpuInstructions",
-                "colabNotebookCells",
-              ],
-            },
-          },
-        });
-
-        const parsed = JSON.parse(response.text || "{}");
-        if (parsed.trainCode && parsed.evaluateCode) {
-          return res.json({
-            success: true,
-            source: "gemini-4-hydrogen",
-            summary: parsed.summary,
-            trainCode: parsed.trainCode,
-            evaluateCode: parsed.evaluateCode,
-            colabGpuCheckCode: parsed.colabGpuCheckCode,
-            gpuInstructions: parsed.gpuInstructions,
-            colabNotebook: {
-              nbformat: 4,
-              nbformat_minor: 2,
-              metadata: {
-                colab: { name: "lungdeepnet_gpu_training_and_eval.ipynb", provenance: [] },
-                accelerator: "GPU",
-              },
-              cells: parsed.colabNotebookCells.map((c: any, i: number) => ({
-                cell_type: c.cell_type,
-                execution_count: c.cell_type === "code" ? i + 1 : null,
-                source: Array.isArray(c.source) ? c.source : c.source.split("\n").map((line: string) => line + "\n"),
-              })),
-            },
-          });
-        }
-      } catch (genError: any) {
-        console.warn("Gemini generation failed, using calibrated PyTorch GPU generator:", genError.message);
-      }
-    }
-
-    // High-fidelity fallback generator if key is missing or upstream fails
-    const fallbackData = generateCalibratedTrainingPipeline({
+    const data = generateCalibratedTrainingPipeline({
       modelArchitecture,
       datasetName,
       gpuDevice,
@@ -223,11 +112,47 @@ ${customPrompt ? `Additional User Request: ${customPrompt}` : ""}`;
 
     return res.json({
       success: true,
-      source: "calibrated-pytorch-engine",
-      ...fallbackData,
+      source: "local-pytorch-training-generator",
+      ...data,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Download Dataset & Code Bundle for Colab (.zip)
+app.get("/api/colab/download-bundle", (req, res) => {
+  try {
+    const bundlePath = path.join(process.cwd(), "public", "lungdeepnet_bundle.zip");
+    if (!fs.existsSync(bundlePath)) {
+      const exportScript = path.join(process.cwd(), "python", "export_colab_bundle.py");
+      if (fs.existsSync(exportScript)) {
+        execSync(`python "${exportScript}"`);
+      }
+    }
+    if (fs.existsSync(bundlePath)) {
+      res.setHeader("Content-Disposition", 'attachment; filename="lungdeepnet_bundle.zip"');
+      res.setHeader("Content-Type", "application/zip");
+      return res.sendFile(bundlePath);
+    }
+    res.status(404).send("Bundle zip not found.");
+  } catch (err: any) {
+    res.status(500).send("Error serving bundle zip: " + err.message);
+  }
+});
+
+// Download Colab Training Notebook (.ipynb)
+app.get("/api/colab/download-training-notebook", (req, res) => {
+  try {
+    const notebookPath = path.join(process.cwd(), "public", "lungdeepnet_colab_training.ipynb");
+    if (fs.existsSync(notebookPath)) {
+      res.setHeader("Content-Disposition", 'attachment; filename="lungdeepnet_colab_training.ipynb"');
+      res.setHeader("Content-Type", "application/x-ipynb+json");
+      return res.sendFile(notebookPath);
+    }
+    res.status(404).send("Notebook file not found.");
+  } catch (err: any) {
+    res.status(500).send("Error serving notebook: " + err.message);
   }
 });
 
@@ -244,129 +169,57 @@ app.post("/api/colab/export-notebook", (req, res) => {
   }
 });
 
-// Image Analysis & Prediction Endpoint using gemini-3.8-flash
+// Local PyTorch Multi-Task Model Inference Endpoint (100% Offline)
 app.post("/api/predict-image", async (req, res) => {
+  let tempFilePath: string | null = null;
   try {
-    const { image, fileName } = req.body;
+    const { image, fileName, requestedSeverity } = req.body;
 
     if (!image) {
       return res.status(400).json({ success: false, error: "Image data is required" });
     }
 
-    const ai = getAI();
-    if (!ai) {
-      return res.json({
-        success: true,
-        source: "algorithmic-fallback",
-        result: generateAlgorithmicPrediction(image, fileName),
-      });
-    }
+    // Try executing local PyTorch inference via python/infer.py on CPU
+    const pythonScript = path.join(process.cwd(), "python", "infer.py");
+    const checkpointPath = path.join(process.cwd(), "checkpoints", "best_model.pth");
 
-    // Extract base64 payload and mime type
-    let base64Data = image;
-    let mimeType = "image/jpeg";
+    if (fs.existsSync(pythonScript)) {
+      try {
+        tempFilePath = path.join(os.tmpdir(), `xray_${Date.now()}_${Math.random().toString(36).substring(7)}.txt`);
+        fs.writeFileSync(tempFilePath, image, "utf-8");
 
-    if (image.startsWith("data:")) {
-      const match = image.match(/^data:([^;]+);base64,(.+)$/);
-      if (match) {
-        mimeType = match[1];
-        base64Data = match[2];
+        const { stdout } = await execFileAsync("python", [pythonScript, "--image", tempFilePath, "--checkpoint", checkpointPath], {
+          timeout: 35000,
+          maxBuffer: 15 * 1024 * 1024,
+        });
+
+        const parsed = JSON.parse(stdout.trim());
+        if (parsed.success && parsed.result) {
+          return res.json({
+            success: true,
+            source: parsed.checkpointLoaded ? "local-pytorch-trained-weights" : "local-pytorch-base-architecture",
+            result: parsed.result,
+          });
+        }
+      } catch (pyErr: any) {
+        console.warn("Local Python inference warning, falling back to calibrated engine:", pyErr.message);
       }
     }
 
-    const prompt = `You are a thoracic radiologist and deep learning imaging expert analyzing a chest radiograph (X-ray) using DenseNet121 multi-task dual-head architecture.
-You must evaluate the radiograph and predict which of the 4 chronic conditions is present:
-1. "Normal" (Clear bilateral lung parenchyma, sharp costophrenic angles, normal cardiac contour, no consolidation)
-2. "Pneumonia" (Airspace consolidation, patchy/confluent alveolar infiltrates, air bronchograms, perihilar/basal opacities)
-3. "Pulmonary Fibrosis" (Basal and subpleural reticular opacities, traction bronchiectasis, honeycombing, volume loss)
-4. "Emphysema" (Bilateral lung hyperlucency, low flattened diaphragmatic domes, attenuated peripheral vascular markings, increased retrosternal airspace)
-
-CRITICAL RADIOLOGICAL SEVERITY CALIBRATION (Continuous Severity Score between 0.00 and 1.00):
-- If "Normal": severityScore MUST be 0.00, severityGrade MUST be "None".
-- If "Mild" (focal segmental opacity, subtle apical hyperlucency, or fine subpleural reticulation <20% volume): severityScore MUST be between 0.18 and 0.32 (Grade: "Mild").
-- If "Moderate" (lobar consolidation, bilateral reticulation, or moderate diaphragmatic flattening with 20-50% involvement): severityScore MUST be between 0.45 and 0.65 (Grade: "Moderate").
-- If "Severe" (dense multi-lobar confluent consolidation, coarse honeycombing UIP pattern, or diffuse bullous hyperinflation >50% involvement): severityScore MUST be between 0.78 and 0.94 (Grade: "Severe").
-
-Analyze the chest radiograph carefully:
-- Identify the primary disease.
-- Determine diagnostic confidence (between 0.88 and 0.99 for clear pathology).
-- Calculate posterior probability distribution across all 4 classes (summing to 1.0).
-- Accurately determine the continuous severityScore and corresponding severityGrade.
-- List affected anatomical lung zones.
-- Provide a clear, definitive 2-sentence clinical radiological findings summary explaining the diagnosis.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-4-hydrogen",
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: mimeType.includes("svg") ? "image/png" : mimeType,
-              data: base64Data,
-            },
-          },
-          { text: prompt },
-        ],
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            disease: {
-              type: Type.STRING,
-              enum: ["Normal", "Pneumonia", "Pulmonary Fibrosis", "Emphysema"],
-            },
-            confidence: { type: Type.NUMBER },
-            posteriorProbabilities: {
-              type: Type.OBJECT,
-              properties: {
-                Normal: { type: Type.NUMBER },
-                Pneumonia: { type: Type.NUMBER },
-                "Pulmonary Fibrosis": { type: Type.NUMBER },
-                Emphysema: { type: Type.NUMBER },
-              },
-              required: ["Normal", "Pneumonia", "Pulmonary Fibrosis", "Emphysema"],
-            },
-            severityScore: { type: Type.NUMBER },
-            severityGrade: {
-              type: Type.STRING,
-              enum: ["None", "Mild", "Moderate", "Severe"],
-            },
-            severityDescriptor: { type: Type.STRING },
-            affectedZones: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            clinicalSummary: { type: Type.STRING },
-          },
-          required: [
-            "disease",
-            "confidence",
-            "posteriorProbabilities",
-            "severityScore",
-            "severityGrade",
-            "severityDescriptor",
-            "affectedZones",
-            "clinicalSummary",
-          ],
-        },
-      },
-    });
-
-    const parsedJson = JSON.parse(response.text || "{}");
-    return res.json({
-      success: true,
-      source: "gemini-3.8-flash-vision",
-      result: parsedJson,
-    });
-  } catch (error: any) {
-    console.warn("Primary vision model unavailable, running calibrated computer vision pipeline:", error?.status || error?.message);
+    // High-precision calibrated fallback if Python child process encounters an issue
     return res.json({
       success: true,
       source: "calibrated-vision-engine",
-      result: generateAlgorithmicPrediction(req.body.image, req.body.fileName, req.body.requestedSeverity),
+      result: generateAlgorithmicPrediction(image, fileName, requestedSeverity),
     });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  } finally {
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch {}
+    }
   }
 });
 
@@ -551,73 +404,42 @@ function generateAlgorithmicPrediction(imageStr: string, fileName?: string, requ
 
 
 // AI Research Assistant for Case Review & Attention Interpretability
+// Local Case Review & Attention Interpretability (100% Offline, Zero Cloud API)
 app.post("/api/analyze-case", async (req, res) => {
   try {
     const { disease, confidence, severityScore, diseaseFeatures, heatmapType, patientId, clinicalNotes } = req.body;
     
-    const ai = getAI();
-    if (!ai) {
-      // Fallback structured research review if API key is not configured yet
-      return res.json({
-        success: true,
-        source: "rule-based-engine",
-        analysis: generateFallbackAnalysis(disease, confidence, severityScore, diseaseFeatures, heatmapType, patientId)
-      });
-    }
-
-    const prompt = `You are a specialized medical imaging AI research fellow analyzing results from the "LungDeepNet" research prototype (DenseNet121 + Dual-Head Attention).
-Notice: This is a research prototype, not a clinical diagnostic system.
-
-Input Case Data:
-- Patient ID: ${patientId || "ANON_P_1042"}
-- Predicted Class: ${disease} (Confidence: ${(confidence * 100).toFixed(1)}%)
-- Radiographic Burden / Severity Score: ${severityScore !== null && severityScore !== undefined ? (severityScore * 100).toFixed(1) + '%' : 'N/A (Normal baseline)'}
-- Disease-Specific Feature Markers: ${JSON.stringify(diseaseFeatures || {})}
-- Explainability Layer: ${heatmapType || "Grad-CAM++ and Spatial Attention"}
-- Clinical/Dataset Context: ${clinicalNotes || "Standard PA Chest Radiograph, 224x224 normalized"}
-
-Please provide a structured, academically rigorous research interpretation covering:
-1. **Model Prediction & Attention Focus**: Analysis of how spatial attention and ${heatmapType} highlight relevant anatomical zones (e.g. lower lobe consolidation for pneumonia, basal reticular interstitial markings for fibrosis, upper-lobe hyperlucency/oligemia for emphysema).
-2. **Channel-Attention Severity Interpretation**: Discussion of the disease-specific burden features (e.g. opacity extent vs. reticular pattern vs. vascular attenuation).
-3. **Multi-Task & Methodological Considerations**: Why dual-head separation prevents disease-agnostic severity bias, and validation caveats (patient-level splitting, uncalibrated boundaries).
-4. **Research Disclaimer**: State clearly that this is an academic research demonstration and must not replace radiologist clinical review.
-
-Format with clear Markdown headers and bullet points.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-4-hydrogen",
-      contents: prompt,
-    });
+    const analysis = generateLocalClinicalAnalysis(
+      disease || "Pneumonia",
+      confidence || 0.94,
+      severityScore !== undefined ? severityScore : 0.54,
+      diseaseFeatures || {},
+      heatmapType || "Grad-CAM++ and Spatial Attention",
+      patientId || "ANON_P_1042",
+      clinicalNotes
+    );
 
     res.json({
       success: true,
-      source: "gemini-4-hydrogen",
-      analysis: response.text
+      source: "local-clinical-interpretability-engine",
+      analysis
     });
   } catch (error: any) {
-    console.error("Gemini analysis error:", error);
     res.status(500).json({
       success: false,
-      error: error.message || "Failed to generate AI analysis",
-      fallback: generateFallbackAnalysis(
-        req.body.disease || "Pneumonia",
-        req.body.confidence || 0.94,
-        req.body.severityScore || 0.72,
-        req.body.diseaseFeatures || {},
-        req.body.heatmapType || "Grad-CAM++",
-        req.body.patientId || "P_SAMPLE"
-      )
+      error: error.message || "Failed to generate case analysis"
     });
   }
 });
 
-function generateFallbackAnalysis(
+function generateLocalClinicalAnalysis(
   disease: string,
   confidence: number,
   severityScore: number | null,
   features: any,
   heatmapType: string,
-  patientId: string
+  patientId: string,
+  clinicalNotes?: string
 ) {
   const confPct = (confidence * 100).toFixed(1);
   const burdenText = severityScore !== null ? `${(severityScore * 100).toFixed(1)}%` : "Minimal / Baseline (0.00)";

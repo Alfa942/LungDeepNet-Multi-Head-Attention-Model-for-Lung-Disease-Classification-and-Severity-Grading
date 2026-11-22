@@ -5,6 +5,7 @@ import { HeatmapCanvas } from './HeatmapCanvas';
 import { PythonCodeModal } from './PythonCodeModal';
 import { ReportFiguresModal } from './ReportFiguresModal';
 import { AccuracyProofModal } from './AccuracyProofModal';
+import { ColabTrainingModal } from './ColabTrainingModal';
 import { 
   Upload, 
   RefreshCw, 
@@ -22,7 +23,8 @@ import {
   FileCode,
   Terminal,
   BookOpen,
-  BarChart3
+  BarChart3,
+  Cpu
 } from 'lucide-react';
 
 interface AnalysisResult {
@@ -50,6 +52,7 @@ export const DiseaseSeverityApp: React.FC = () => {
   const [isPythonModalOpen, setIsPythonModalOpen] = useState<boolean>(false);
   const [isFiguresModalOpen, setIsFiguresModalOpen] = useState<boolean>(false);
   const [isAccuracyModalOpen, setIsAccuracyModalOpen] = useState<boolean>(false);
+  const [isColabModalOpen, setIsColabModalOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Helper to map sample case to AnalysisResult
@@ -386,6 +389,18 @@ export const DiseaseSeverityApp: React.FC = () => {
               <span>Python Code</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono">
                 /python/
+              </span>
+            </button>
+
+            <button
+              onClick={() => setIsColabModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 transition cursor-pointer shadow-sm hover:border-purple-400"
+              title="Train on your data folder using Google Colab Free Tier (T4 GPU)"
+            >
+              <Cpu className="w-3.5 h-3.5 text-purple-400" />
+              <span>Colab Free GPU</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-200 font-mono font-bold">
+                Train
               </span>
             </button>
 
@@ -1118,6 +1133,12 @@ export const DiseaseSeverityApp: React.FC = () => {
       <AccuracyProofModal
         isOpen={isAccuracyModalOpen}
         onClose={() => setIsAccuracyModalOpen(false)}
+      />
+
+      {/* Google Colab Free Tier GPU Training Suite Modal */}
+      <ColabTrainingModal
+        isOpen={isColabModalOpen}
+        onClose={() => setIsColabModalOpen(false)}
       />
     </div>
   );

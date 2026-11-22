@@ -40,7 +40,7 @@ export const InferenceWorkbench: React.FC = () => {
   const [customImage, setCustomImage] = useState<string | null>(null);
   const [isProcessingUpload, setIsProcessingUpload] = useState<boolean>(false);
 
-  // Gemini AI Case Analysis state
+  // Local Clinical Case Analysis state
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
 
@@ -232,7 +232,7 @@ export const InferenceWorkbench: React.FC = () => {
         setAiAnalysis(data.fallback);
       }
     } catch (err: any) {
-      console.error('Failed to query Gemini:', err);
+      console.error('Failed to query local analysis engine:', err);
       // Fallback
       setAiAnalysis(`### Case Interpretation: ${selectedCase.patientId}\n- **Prediction**: ${selectedCase.predictedClass} (${(selectedCase.confidence * 100).toFixed(1)}%)\n- **Spatial Attention**: Localized to ${selectedCase.affectedLungZones.join(', ')}.\n- **Radiographic Burden**: ${(selectedCase.severityScore ?? 0) * 100}% continuous burden score.\n- *Note: Research prototype only.*`);
     } finally {

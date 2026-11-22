@@ -10,7 +10,8 @@ import {
   Download, 
   ShieldAlert, 
   Sparkles,
-  Target
+  Target,
+  Cpu
 } from 'lucide-react';
 
 export type NavTab = 
@@ -36,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isDownloadingZip = false,
 }) => {
   const tabs = [
-    { id: 'gemini_studio' as NavTab, label: 'Gemini & Colab GPU', icon: Sparkles },
+    { id: 'gemini_studio' as NavTab, label: 'Colab GPU Training', icon: Cpu },
     { id: 'workbench' as NavTab, label: 'Diagnostic Analyzer', icon: Activity },
     { id: 'evaluation' as NavTab, label: 'Test Evaluation', icon: BarChart3 },
     { id: 'architecture' as NavTab, label: 'Architecture', icon: Layers },
