@@ -24,7 +24,8 @@ import {
   Terminal,
   BookOpen,
   BarChart3,
-  Cpu
+  Cpu,
+  ShieldCheck
 } from 'lucide-react';
 
 interface AnalysisResult {
