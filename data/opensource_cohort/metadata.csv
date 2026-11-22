@@ -1,0 +1,41 @@
+patient_id,image_path,disease,severity_score,severity_available,source
+NIH_00008230,data/opensource_cohort/Emphysema/00008230_007.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00002614,data/opensource_cohort/Emphysema/00002614_003.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00015078,data/opensource_cohort/Emphysema/00015078_011.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00011859,data/opensource_cohort/Emphysema/00011859_022.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00015387,data/opensource_cohort/Emphysema/00015387_000.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00000359,data/opensource_cohort/Emphysema/00000359_002.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00001952,data/opensource_cohort/Emphysema/00001952_006.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00008468,data/opensource_cohort/Emphysema/00008468_018.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00026793,data/opensource_cohort/Emphysema/00026793_002.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00011355,data/opensource_cohort/Emphysema/00011355_002.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00012640,data/opensource_cohort/Pulmonary_Fibrosis/00012640_018.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00015387,data/opensource_cohort/Pulmonary_Fibrosis/00015387_000.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00011683,data/opensource_cohort/Pulmonary_Fibrosis/00011683_023.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00007687,data/opensource_cohort/Pulmonary_Fibrosis/00007687_001.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00026889,data/opensource_cohort/Pulmonary_Fibrosis/00026889_000.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00001836,data/opensource_cohort/Pulmonary_Fibrosis/00001836_090.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00003675,data/opensource_cohort/Pulmonary_Fibrosis/00003675_000.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00015166,data/opensource_cohort/Pulmonary_Fibrosis/00015166_004.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00020603,data/opensource_cohort/Pulmonary_Fibrosis/00020603_005.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00000827,data/opensource_cohort/Pulmonary_Fibrosis/00000827_012.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00008270,data/opensource_cohort/Normal/00008270_015.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00012359,data/opensource_cohort/Normal/00012359_002.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00017135,data/opensource_cohort/Normal/00017135_000.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00027235,data/opensource_cohort/Normal/00027235_000.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00014197,data/opensource_cohort/Normal/00014197_007.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00011584,data/opensource_cohort/Normal/00011584_002.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00015929,data/opensource_cohort/Normal/00015929_002.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00009911,data/opensource_cohort/Normal/00009911_001.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00026232,data/opensource_cohort/Normal/00026232_006.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00013710,data/opensource_cohort/Normal/00013710_000.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00002474,data/opensource_cohort/Pneumonia/00002474_004.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00026825,data/opensource_cohort/Pneumonia/00026825_008.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00029883,data/opensource_cohort/Pneumonia/00029883_006.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00018843,data/opensource_cohort/Pneumonia/00018843_000.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00028485,data/opensource_cohort/Pneumonia/00028485_005.png,Pneumonia,0.7,True,NIH_ChestXray14
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-a-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-b-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-c-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-d-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_4,data/opensource_cohort/Pneumonia/ieee_nejmc2001573_f1a.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia

@@ -1,0 +1,79 @@
+{
+  "held_out_test": {
+    "accuracy": 0.06666666666666667,
+    "macro_f1": 0.1,
+    "macro_sensitivity": 0.0625,
+    "macro_precision": 0.25,
+    "macro_auroc": 0.4494949494949495,
+    "confusion_matrix": [
+      [
+        0,
+        1,
+        5,
+        0
+      ],
+      [
+        1,
+        0,
+        3,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        3,
+        1
+      ]
+    ],
+    "severity_mae": 0.07959771156311035,
+    "severity_rmse": 0.11427820463871723,
+    "severity_pearson_r": 0.48805171251296997,
+    "severity_spearman_rho": 0.44450939321644756
+  },
+  "opensource_cohort": {
+    "accuracy": 0.5,
+    "macro_f1": 0.4426157366660799,
+    "macro_sensitivity": 0.5,
+    "macro_precision": 0.40571581196581197,
+    "macro_auroc": 0.76375,
+    "confusion_matrix": [
+      [
+        0,
+        2,
+        6,
+        2
+      ],
+      [
+        1,
+        9,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        6,
+        2
+      ],
+      [
+        0,
+        1,
+        4,
+        5
+      ]
+    ],
+    "severity_mae": 0.04384379833936691,
+    "severity_rmse": 0.06136173235578607,
+    "severity_pearson_r": 0.4844423532485962,
+    "severity_spearman_rho": 0.5028395050121249
+  },
+  "best_val_loss": 1.3368935414722987,
+  "model_checkpoint": "checkpoints/best_model.pth",
+  "total_epochs": 8
+}

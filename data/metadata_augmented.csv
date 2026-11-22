@@ -1,0 +1,101 @@
+patient_id,image_path,disease,severity_score,severity_available,source
+PATIENT_1000,data/images/Normal/normal_001.pgm,Normal,0.0,False,
+PATIENT_1001,data/images/Normal/normal_002.pgm,Normal,0.0,False,
+PATIENT_1002,data/images/Normal/normal_003.pgm,Normal,0.0,False,
+PATIENT_1003,data/images/Normal/normal_004.pgm,Normal,0.0,False,
+PATIENT_1004,data/images/Normal/normal_005.pgm,Normal,0.0,False,
+PATIENT_1005,data/images/Normal/normal_006.pgm,Normal,0.0,False,
+PATIENT_1006,data/images/Normal/normal_007.pgm,Normal,0.0,False,
+PATIENT_1007,data/images/Normal/normal_008.pgm,Normal,0.0,False,
+PATIENT_1008,data/images/Normal/normal_009.pgm,Normal,0.0,False,
+PATIENT_1009,data/images/Normal/normal_010.pgm,Normal,0.0,False,
+PATIENT_1010,data/images/Normal/normal_011.pgm,Normal,0.0,False,
+PATIENT_1011,data/images/Normal/normal_012.pgm,Normal,0.0,False,
+PATIENT_1012,data/images/Normal/normal_013.pgm,Normal,0.0,False,
+PATIENT_1013,data/images/Normal/normal_014.pgm,Normal,0.0,False,
+PATIENT_1014,data/images/Normal/normal_015.pgm,Normal,0.0,False,
+PATIENT_1015,data/images/Pneumonia/pneumonia_001.pgm,Pneumonia,0.246,True,
+PATIENT_1016,data/images/Pneumonia/pneumonia_002.pgm,Pneumonia,0.318,True,
+PATIENT_1017,data/images/Pneumonia/pneumonia_003.pgm,Pneumonia,0.675,True,
+PATIENT_1018,data/images/Pneumonia/pneumonia_004.pgm,Pneumonia,0.294,True,
+PATIENT_1019,data/images/Pneumonia/pneumonia_005.pgm,Pneumonia,0.476,True,
+PATIENT_1020,data/images/Pneumonia/pneumonia_006.pgm,Pneumonia,0.611,True,
+PATIENT_1021,data/images/Pneumonia/pneumonia_007.pgm,Pneumonia,0.628,True,
+PATIENT_1022,data/images/Pneumonia/pneumonia_008.pgm,Pneumonia,0.747,True,
+PATIENT_1023,data/images/Pneumonia/pneumonia_009.pgm,Pneumonia,0.544,True,
+PATIENT_1024,data/images/Pneumonia/pneumonia_010.pgm,Pneumonia,0.491,True,
+PATIENT_1025,data/images/Pneumonia/pneumonia_011.pgm,Pneumonia,0.448,True,
+PATIENT_1026,data/images/Pneumonia/pneumonia_012.pgm,Pneumonia,0.729,True,
+PATIENT_1027,data/images/Pneumonia/pneumonia_013.pgm,Pneumonia,0.467,True,
+PATIENT_1028,data/images/Pneumonia/pneumonia_014.pgm,Pneumonia,0.829,True,
+PATIENT_1029,data/images/Pneumonia/pneumonia_015.pgm,Pneumonia,0.406,True,
+PATIENT_1030,data/images/Emphysema/emphysema_001.pgm,Emphysema,0.416,True,
+PATIENT_1031,data/images/Emphysema/emphysema_002.pgm,Emphysema,0.22,True,
+PATIENT_1032,data/images/Emphysema/emphysema_003.pgm,Emphysema,0.382,True,
+PATIENT_1033,data/images/Emphysema/emphysema_004.pgm,Emphysema,0.188,True,
+PATIENT_1034,data/images/Emphysema/emphysema_005.pgm,Emphysema,0.459,True,
+PATIENT_1035,data/images/Emphysema/emphysema_006.pgm,Emphysema,0.522,True,
+PATIENT_1036,data/images/Emphysema/emphysema_007.pgm,Emphysema,0.619,True,
+PATIENT_1037,data/images/Emphysema/emphysema_008.pgm,Emphysema,0.678,True,
+PATIENT_1038,data/images/Emphysema/emphysema_009.pgm,Emphysema,0.503,True,
+PATIENT_1039,data/images/Emphysema/emphysema_010.pgm,Emphysema,0.573,True,
+PATIENT_1040,data/images/Emphysema/emphysema_011.pgm,Emphysema,0.702,True,
+PATIENT_1041,data/images/Emphysema/emphysema_012.pgm,Emphysema,0.619,True,
+PATIENT_1042,data/images/Emphysema/emphysema_013.pgm,Emphysema,0.616,True,
+PATIENT_1043,data/images/Emphysema/emphysema_014.pgm,Emphysema,0.449,True,
+PATIENT_1044,data/images/Emphysema/emphysema_015.pgm,Emphysema,0.379,True,
+PATIENT_1045,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_001.pgm,Pulmonary Fibrosis,0.565,True,
+PATIENT_1046,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_002.pgm,Pulmonary Fibrosis,0.367,True,
+PATIENT_1047,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_003.pgm,Pulmonary Fibrosis,0.469,True,
+PATIENT_1048,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_004.pgm,Pulmonary Fibrosis,0.577,True,
+PATIENT_1049,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_005.pgm,Pulmonary Fibrosis,0.606,True,
+PATIENT_1050,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_006.pgm,Pulmonary Fibrosis,0.856,True,
+PATIENT_1051,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_007.pgm,Pulmonary Fibrosis,0.458,True,
+PATIENT_1052,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_008.pgm,Pulmonary Fibrosis,0.314,True,
+PATIENT_1053,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_009.pgm,Pulmonary Fibrosis,0.641,True,
+PATIENT_1054,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_010.pgm,Pulmonary Fibrosis,0.564,True,
+PATIENT_1055,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_011.pgm,Pulmonary Fibrosis,0.554,True,
+PATIENT_1056,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_012.pgm,Pulmonary Fibrosis,0.907,True,
+PATIENT_1057,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_013.pgm,Pulmonary Fibrosis,0.938,True,
+PATIENT_1058,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_014.pgm,Pulmonary Fibrosis,0.557,True,
+PATIENT_1059,data/images/Pulmonary_Fibrosis/pulmonary_fibrosis_015.pgm,Pulmonary Fibrosis,0.677,True,
+NIH_00008230,data/opensource_cohort/Emphysema/00008230_007.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00002614,data/opensource_cohort/Emphysema/00002614_003.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00015078,data/opensource_cohort/Emphysema/00015078_011.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00011859,data/opensource_cohort/Emphysema/00011859_022.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00015387,data/opensource_cohort/Emphysema/00015387_000.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00000359,data/opensource_cohort/Emphysema/00000359_002.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00001952,data/opensource_cohort/Emphysema/00001952_006.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00008468,data/opensource_cohort/Emphysema/00008468_018.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00026793,data/opensource_cohort/Emphysema/00026793_002.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00011355,data/opensource_cohort/Emphysema/00011355_002.png,Emphysema,0.62,True,NIH_ChestXray14
+NIH_00012640,data/opensource_cohort/Pulmonary_Fibrosis/00012640_018.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00015387,data/opensource_cohort/Pulmonary_Fibrosis/00015387_000.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00011683,data/opensource_cohort/Pulmonary_Fibrosis/00011683_023.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00007687,data/opensource_cohort/Pulmonary_Fibrosis/00007687_001.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00026889,data/opensource_cohort/Pulmonary_Fibrosis/00026889_000.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00001836,data/opensource_cohort/Pulmonary_Fibrosis/00001836_090.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00003675,data/opensource_cohort/Pulmonary_Fibrosis/00003675_000.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00015166,data/opensource_cohort/Pulmonary_Fibrosis/00015166_004.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00020603,data/opensource_cohort/Pulmonary_Fibrosis/00020603_005.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00000827,data/opensource_cohort/Pulmonary_Fibrosis/00000827_012.png,Pulmonary Fibrosis,0.68,True,NIH_ChestXray14
+NIH_00008270,data/opensource_cohort/Normal/00008270_015.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00012359,data/opensource_cohort/Normal/00012359_002.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00017135,data/opensource_cohort/Normal/00017135_000.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00027235,data/opensource_cohort/Normal/00027235_000.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00014197,data/opensource_cohort/Normal/00014197_007.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00011584,data/opensource_cohort/Normal/00011584_002.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00015929,data/opensource_cohort/Normal/00015929_002.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00009911,data/opensource_cohort/Normal/00009911_001.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00026232,data/opensource_cohort/Normal/00026232_006.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00013710,data/opensource_cohort/Normal/00013710_000.png,Normal,0.0,False,NIH_ChestXray14
+NIH_00002474,data/opensource_cohort/Pneumonia/00002474_004.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00026825,data/opensource_cohort/Pneumonia/00026825_008.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00029883,data/opensource_cohort/Pneumonia/00029883_006.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00018843,data/opensource_cohort/Pneumonia/00018843_000.png,Pneumonia,0.7,True,NIH_ChestXray14
+NIH_00028485,data/opensource_cohort/Pneumonia/00028485_005.png,Pneumonia,0.7,True,NIH_ChestXray14
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-a-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-b-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-c-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_2,data/opensource_cohort/Pneumonia/ieee_auntminnie-d-2020_01_28_23_51_6665_2020_01_28_Vietnam_coronavirus.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
+IEEE_4,data/opensource_cohort/Pneumonia/ieee_nejmc2001573_f1a.jpeg,Pneumonia,0.75,True,IEEE_Cohen_Pneumonia
