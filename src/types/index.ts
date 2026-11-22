@@ -171,3 +171,27 @@ export interface PythonSourceFile {
   description: string;
   code: string;
 }
+
+export interface GeminiTrainingCodeResponse {
+  success: boolean;
+  source: string;
+  summary: string;
+  trainCode: string;
+  evaluateCode: string;
+  colabGpuCheckCode: string;
+  gpuInstructions: {
+    minimumVram: string;
+    recommendedGpu: string;
+    instructions: string[];
+  };
+  colabNotebook: {
+    nbformat: number;
+    nbformat_minor: number;
+    metadata: Record<string, any>;
+    cells: Array<{
+      cell_type: 'markdown' | 'code';
+      execution_count?: number | null;
+      source: string[];
+    }>;
+  };
+}

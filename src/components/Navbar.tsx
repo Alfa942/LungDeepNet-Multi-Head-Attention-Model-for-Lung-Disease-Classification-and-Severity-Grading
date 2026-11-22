@@ -14,11 +14,10 @@ import {
 } from 'lucide-react';
 
 export type NavTab = 
-  | 'objectives'
+  | 'gemini_studio'
   | 'workbench' 
   | 'architecture' 
   | 'datasets' 
-  | 'optuna' 
   | 'evaluation' 
   | 'codehub' 
   | 'report';
@@ -37,43 +36,35 @@ export const Navbar: React.FC<NavbarProps> = ({
   isDownloadingZip = false,
 }) => {
   const tabs = [
-    { id: 'objectives' as NavTab, label: 'Research Objectives (1-4)', icon: Target },
-    { id: 'workbench' as NavTab, label: 'Inference & Explainability', icon: Activity },
-    { id: 'architecture' as NavTab, label: 'Dual-Head Architecture', icon: Layers },
-    { id: 'datasets' as NavTab, label: 'Harmonized Datasets', icon: Database },
-    { id: 'optuna' as NavTab, label: 'Optuna HPO', icon: Sliders },
-    { id: 'evaluation' as NavTab, label: 'Evaluation & Ablation', icon: BarChart3 },
-    { id: 'codehub' as NavTab, label: 'Colab Notebooks & Code', icon: FileCode2 },
+    { id: 'gemini_studio' as NavTab, label: 'Gemini & Colab GPU', icon: Sparkles },
+    { id: 'workbench' as NavTab, label: 'Diagnostic Analyzer', icon: Activity },
+    { id: 'evaluation' as NavTab, label: 'Test Evaluation', icon: BarChart3 },
+    { id: 'architecture' as NavTab, label: 'Architecture', icon: Layers },
+    { id: 'datasets' as NavTab, label: 'Datasets', icon: Database },
+    { id: 'codehub' as NavTab, label: 'Colab Notebooks', icon: FileCode2 },
     { id: 'report' as NavTab, label: 'Technical Report', icon: FileText },
   ];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-16 gap-8">
           
-          {/* Logo & Title */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400/40">
+          {/* Zone 1: Single text element wordmark */}
+          <button
+            onClick={() => setActiveTab('gemini_studio')}
+            className="flex items-center gap-2.5 whitespace-nowrap shrink-0 text-left cursor-pointer"
+          >
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400/40">
               <Activity className="w-5 h-5 text-slate-950 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-lg text-white font-mono">
-                  Lung<span className="text-cyan-400">DeepNet</span>
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-cyan-950/80 text-cyan-300 border border-cyan-800/50 rounded-full">
-                  v1.0 Research
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
-                DenseNet121 • Dual-Head Spatial & Channel Attention • Disease-Aware Severity
-              </p>
-            </div>
-          </div>
+            <span className="font-extrabold tracking-tight text-lg text-white font-mono">
+              Lung<span className="text-cyan-400">DeepNet</span>
+            </span>
+          </button>
 
-          {/* Navigation Items */}
-          <nav className="hidden lg:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80">
+          {/* Zone 2: Navigation Items (single line, whitespace-nowrap) */}
+          <nav className="hidden lg:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80 shrink-0">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -82,9 +73,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={tab.id}
                   id={`nav-tab-${tab.id}`}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap shrink-0 transition-all ${
                     isActive
-                      ? 'bg-cyan-500 text-slate-950 font-semibold shadow-md shadow-cyan-500/25'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/25'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
                 >
