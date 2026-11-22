@@ -170,211 +170,170 @@ app.post("/api/colab/export-notebook", (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+var testImagesCatalog = {};
+var manifestLookup = {};
+var initCatalogs = () => {
+  try {
+    const candidatesCatalog = [
+      import_path.default.join(process.cwd(), "src", "data", "testImagesCatalog.json"),
+      import_path.default.join(__dirname, "src", "data", "testImagesCatalog.json"),
+      import_path.default.join(process.cwd(), "LungDeepNet-Multi-Head-Attention-Model-for-Lung-Disease-Classification-and-Severity-Grading", "src", "data", "testImagesCatalog.json")
+    ];
+    const catPath = candidatesCatalog.find((p) => import_fs.default.existsSync(p));
+    if (catPath) {
+      testImagesCatalog = JSON.parse(import_fs.default.readFileSync(catPath, "utf-8"));
+      console.log(`[Diagnostic Engine] Loaded ${Object.keys(testImagesCatalog).length} test catalog entries.`);
+    }
+  } catch (e) {
+    console.warn("Could not load testImagesCatalog:", e);
+  }
+  try {
+    const candidatesManifest = [
+      import_path.default.join(process.cwd(), "data", "manifest_lookup.json"),
+      import_path.default.join(__dirname, "data", "manifest_lookup.json"),
+      import_path.default.join(process.cwd(), "LungDeepNet-Multi-Head-Attention-Model-for-Lung-Disease-Classification-and-Severity-Grading", "data", "manifest_lookup.json")
+    ];
+    const manPath = candidatesManifest.find((p) => import_fs.default.existsSync(p));
+    if (manPath) {
+      manifestLookup = JSON.parse(import_fs.default.readFileSync(manPath, "utf-8"));
+      console.log(`[Diagnostic Engine] Loaded ${Object.keys(manifestLookup).length} 40k dataset manifest entries.`);
+    }
+  } catch (e) {
+    console.warn("Could not load manifestLookup:", e);
+  }
+};
+initCatalogs();
+app.get("/api/test-cohort", (req, res) => {
+  try {
+    const candidatesCatalog = [
+      import_path.default.join(process.cwd(), "src", "data", "testImagesCatalog.json"),
+      import_path.default.join(__dirname, "src", "data", "testImagesCatalog.json"),
+      import_path.default.join(process.cwd(), "LungDeepNet-Multi-Head-Attention-Model-for-Lung-Disease-Classification-and-Severity-Grading", "src", "data", "testImagesCatalog.json")
+    ];
+    const catPath = candidatesCatalog.find((p) => import_fs.default.existsSync(p));
+    if (catPath) {
+      const data = JSON.parse(import_fs.default.readFileSync(catPath, "utf-8"));
+      return res.json({ success: true, catalog: data });
+    }
+    res.status(404).json({ success: false, error: "Catalog not found" });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+app.get("/api/download-test-cohort", (req, res) => {
+  try {
+    const candidatesZip = [
+      import_path.default.join(process.cwd(), "public", "test_images_40k_cohort.zip"),
+      import_path.default.join(__dirname, "public", "test_images_40k_cohort.zip"),
+      import_path.default.join(process.cwd(), "LungDeepNet-Multi-Head-Attention-Model-for-Lung-Disease-Classification-and-Severity-Grading", "public", "test_images_40k_cohort.zip")
+    ];
+    const zipPath = candidatesZip.find((p) => import_fs.default.existsSync(p));
+    if (zipPath) {
+      res.setHeader("Content-Disposition", 'attachment; filename="test_images_40k_cohort.zip"');
+      res.setHeader("Content-Type", "application/zip");
+      return res.sendFile(zipPath);
+    }
+    res.status(404).send("Test cohort archive not found.");
+  } catch (e) {
+    res.status(500).send("Error serving test cohort: " + e.message);
+  }
+});
+var PYTHON_EXE = process.env.PYTHON_PATH || "C:\\Users\\ayush\\Miniconda3\\python.exe";
+var pythonServerProcess = null;
+async function checkInferenceServerHealth() {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2e3);
+    const res = await fetch("http://127.0.0.1:5005/health", { signal: controller.signal });
+    clearTimeout(timer);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+async function ensureInferenceServer() {
+  const alive = await checkInferenceServerHealth();
+  if (alive) {
+    console.log("[LungDeepNet Neural Engine] Inference daemon already active at http://127.0.0.1:5005");
+    return;
+  }
+  const scriptPath = import_path.default.join(process.cwd(), "python", "inference_server.py");
+  if (import_fs.default.existsSync(scriptPath) && import_fs.default.existsSync(PYTHON_EXE)) {
+    console.log("[LungDeepNet Neural Engine] Launching dedicated neural inference daemon...");
+    const { spawn } = await import("child_process");
+    pythonServerProcess = spawn(PYTHON_EXE, [scriptPath], {
+      detached: true,
+      stdio: "ignore",
+      cwd: process.cwd()
+    });
+    pythonServerProcess.unref();
+  }
+}
 app.post("/api/predict-image", async (req, res) => {
-  let tempFilePath = null;
+  let tempTxtPath = null;
   try {
     const { image, fileName, requestedSeverity } = req.body;
     if (!image) {
       return res.status(400).json({ success: false, error: "Image data is required" });
     }
-    const pythonScript = import_path.default.join(process.cwd(), "python", "infer.py");
-    const checkpointPath = import_path.default.join(process.cwd(), "checkpoints", "best_model.pth");
-    if (import_fs.default.existsSync(pythonScript)) {
-      try {
-        tempFilePath = import_path.default.join(import_os.default.tmpdir(), `xray_${Date.now()}_${Math.random().toString(36).substring(7)}.txt`);
-        import_fs.default.writeFileSync(tempFilePath, image, "utf-8");
-        const { stdout } = await execFileAsync("python", [pythonScript, "--image", tempFilePath, "--checkpoint", checkpointPath], {
-          timeout: 35e3,
-          maxBuffer: 15 * 1024 * 1024
-        });
-        const parsed = JSON.parse(stdout.trim());
-        if (parsed.success && parsed.result) {
-          return res.json({
-            success: true,
-            source: parsed.checkpointLoaded ? "local-pytorch-trained-weights" : "local-pytorch-base-architecture",
-            result: parsed.result
-          });
-        }
-      } catch (pyErr) {
-        console.warn("Local Python inference warning, falling back to calibrated engine:", pyErr.message);
+    let imageInput = image;
+    if (typeof image === "string" && image.startsWith("/")) {
+      const resolvedLocal = import_path.default.join(process.cwd(), "public", image.replace(/^\//, ""));
+      if (import_fs.default.existsSync(resolvedLocal)) {
+        imageInput = resolvedLocal;
       }
     }
-    return res.json({
-      success: true,
-      source: "calibrated-vision-engine",
-      result: generateAlgorithmicPrediction(image, fileName, requestedSeverity)
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8e3);
+      const serverRes = await fetch("http://127.0.0.1:5005/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageInput }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (serverRes.ok) {
+        const neuralData = await serverRes.json();
+        return res.json(neuralData);
+      }
+    } catch (daemonErr) {
+      console.warn("[Diagnostic Engine] In-memory server not ready, using direct neural CLI inference:", daemonErr.message);
+      ensureInferenceServer().catch(() => {
+      });
+    }
+    if (typeof imageInput === "string" && imageInput.length > 300) {
+      tempTxtPath = import_path.default.join(import_os.default.tmpdir(), `xray_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.txt`);
+      import_fs.default.writeFileSync(tempTxtPath, imageInput, "utf-8");
+      imageInput = tempTxtPath;
+    }
+    const scriptPath = import_path.default.join(process.cwd(), "python", "infer.py");
+    const { stdout } = await execFileAsync(PYTHON_EXE, [scriptPath, "--image", imageInput], {
+      timeout: 6e4,
+      maxBuffer: 10 * 1024 * 1024
     });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  } finally {
-    if (tempFilePath && import_fs.default.existsSync(tempFilePath)) {
+    if (tempTxtPath && import_fs.default.existsSync(tempTxtPath)) {
       try {
-        import_fs.default.unlinkSync(tempFilePath);
+        import_fs.default.unlinkSync(tempTxtPath);
       } catch {
       }
     }
+    const parsed = JSON.parse(stdout.trim());
+    return res.json(parsed);
+  } catch (error) {
+    if (tempTxtPath && import_fs.default.existsSync(tempTxtPath)) {
+      try {
+        import_fs.default.unlinkSync(tempTxtPath);
+      } catch {
+      }
+    }
+    console.error("Python neural inference failed:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: `Neural inference failed: ${error.message}`
+    });
   }
 });
-function generateAlgorithmicPrediction(imageStr, fileName, requestedSeverity) {
-  const nameLower = (fileName || "").toLowerCase();
-  const rawDecoded = imageStr.startsWith("data:") ? decodeURIComponent(imageStr.slice(0, 800)).toLowerCase() : "";
-  let targetSeverity = "moderate";
-  if (requestedSeverity && ["mild", "moderate", "severe", "none"].includes(requestedSeverity.toLowerCase())) {
-    targetSeverity = requestedSeverity.toLowerCase();
-  } else if (nameLower.includes("mild") || nameLower.includes("stage1") || nameLower.includes("grade1") || rawDecoded.includes("mild")) {
-    targetSeverity = "mild";
-  } else if (nameLower.includes("sev") || nameLower.includes("stage3") || nameLower.includes("grade3") || nameLower.includes("critical") || rawDecoded.includes("severe")) {
-    targetSeverity = "severe";
-  } else if (nameLower.includes("mod") || nameLower.includes("stage2") || nameLower.includes("grade2") || rawDecoded.includes("moderate")) {
-    targetSeverity = "moderate";
-  }
-  const isNormal = nameLower.includes("norm") || nameLower.includes("healthy") || nameLower.includes("clear") || nameLower.includes("ctrl") || rawDecoded.includes("normal");
-  const isFibrosis = nameLower.includes("fib") || /(^|[^a-z])ild([^a-z]|$)/i.test(nameLower) || nameLower.includes("retic") || nameLower.includes("honey") || rawDecoded.includes("fibrosis");
-  const isEmphysema = nameLower.includes("emp") || nameLower.includes("copd") || nameLower.includes("hyper") || rawDecoded.includes("emphysema");
-  const isPneumonia = nameLower.includes("pnm") || nameLower.includes("pneu") || nameLower.includes("infilt") || nameLower.includes("consol") || rawDecoded.includes("pneumonia");
-  let targetDisease = "Pneumonia";
-  if (isNormal) {
-    targetDisease = "Normal";
-  } else if (isFibrosis) {
-    targetDisease = "Pulmonary Fibrosis";
-  } else if (isEmphysema) {
-    targetDisease = "Emphysema";
-  } else if (isPneumonia) {
-    targetDisease = "Pneumonia";
-  } else {
-    let hash = 0;
-    for (let i = 0; i < Math.min(1e3, imageStr.length); i++) {
-      hash = hash * 31 + imageStr.charCodeAt(i) & 4294967295;
-    }
-    const bucket = Math.abs(hash) % 4;
-    if (bucket === 0) targetDisease = "Normal";
-    else if (bucket === 1) targetDisease = "Pneumonia";
-    else if (bucket === 2) targetDisease = "Pulmonary Fibrosis";
-    else targetDisease = "Emphysema";
-    const sevBucket = Math.abs(hash >> 3) % 3;
-    if (sevBucket === 0) targetSeverity = "mild";
-    else if (sevBucket === 1) targetSeverity = "moderate";
-    else targetSeverity = "severe";
-  }
-  if (targetDisease === "Normal") {
-    return {
-      disease: "Normal",
-      confidence: 0.985,
-      posteriorProbabilities: { Normal: 0.985, Pneumonia: 7e-3, "Pulmonary Fibrosis": 4e-3, Emphysema: 4e-3 },
-      severityScore: 0,
-      severityGrade: "None",
-      severityDescriptor: "Normal Baseline (0.00 Radiographic Burden)",
-      affectedZones: ["Clear Bilateral Lung Parenchyma", "Sharp Costophrenic Angles"],
-      clinicalSummary: "Normal lung volumes without focal airspace consolidation, interstitial reticulation, effusion, or pneumothorax. Sharp bilateral costophrenic angles with normal cardiothoracic contour."
-    };
-  }
-  if (targetDisease === "Pneumonia") {
-    if (targetSeverity === "mild") {
-      return {
-        disease: "Pneumonia",
-        confidence: 0.932,
-        posteriorProbabilities: { Normal: 0.042, Pneumonia: 0.932, "Pulmonary Fibrosis": 0.018, Emphysema: 8e-3 },
-        severityScore: 0.24,
-        severityGrade: "Mild",
-        severityDescriptor: "Mild Focal Subsegmental Opacity (0.24 Burden)",
-        affectedZones: ["Right Lower Lobe (Subsegmental)", "Right Mid Zone Peripheral"],
-        clinicalSummary: "Early mild focal airspace opacity localized to the right lower lobe posterior basilar segment. No dense confluent consolidation or air bronchograms; left lung clear."
-      };
-    }
-    if (targetSeverity === "severe") {
-      return {
-        disease: "Pneumonia",
-        confidence: 0.978,
-        posteriorProbabilities: { Normal: 3e-3, Pneumonia: 0.978, "Pulmonary Fibrosis": 0.014, Emphysema: 5e-3 },
-        severityScore: 0.86,
-        severityGrade: "Severe",
-        severityDescriptor: "Severe Bilateral Multi-Lobar Consolidation (0.86 Burden)",
-        affectedZones: ["Bilateral Lower Lobes", "Right Mid Zone", "Left Retrocardiac Zone"],
-        clinicalSummary: "Extensive dense bilateral confluent airspace consolidation with prominent air bronchograms involving the right lower/mid zones and left basilar parenchyma, indicating severe alveolar pneumonia."
-      };
-    }
-    return {
-      disease: "Pneumonia",
-      confidence: 0.954,
-      posteriorProbabilities: { Normal: 0.014, Pneumonia: 0.954, "Pulmonary Fibrosis": 0.022, Emphysema: 0.01 },
-      severityScore: 0.54,
-      severityGrade: "Moderate",
-      severityDescriptor: "Moderate Unilateral Lobar Consolidation (0.54 Burden)",
-      affectedZones: ["Right Lower Lobe", "Right Mid Zone"],
-      clinicalSummary: "Moderate confluent alveolar airspace consolidation occupying the right lower and mid lung zones with visible air bronchograms. Mild reactive blunting of the right lateral costophrenic angle."
-    };
-  }
-  if (targetDisease === "Pulmonary Fibrosis") {
-    if (targetSeverity === "mild") {
-      return {
-        disease: "Pulmonary Fibrosis",
-        confidence: 0.924,
-        posteriorProbabilities: { Normal: 0.045, Pneumonia: 0.021, "Pulmonary Fibrosis": 0.924, Emphysema: 0.01 },
-        severityScore: 0.28,
-        severityGrade: "Mild",
-        severityDescriptor: "Mild Early Subpleural Basilar Reticulation (0.28 Burden)",
-        affectedZones: ["Subpleural Periphery", "Bilateral Basilar Margins"],
-        clinicalSummary: "Early mild fine reticular interstitial markings localized strictly to the subpleural basilar periphery. No honeycombing cysts or traction bronchiectasis; lung volumes well preserved."
-      };
-    }
-    if (targetSeverity === "severe") {
-      return {
-        disease: "Pulmonary Fibrosis",
-        confidence: 0.968,
-        posteriorProbabilities: { Normal: 4e-3, Pneumonia: 0.018, "Pulmonary Fibrosis": 0.968, Emphysema: 0.01 },
-        severityScore: 0.9,
-        severityGrade: "Severe",
-        severityDescriptor: "Severe Honeycombing & End-Stage UIP Fibrosis (0.90 Burden)",
-        affectedZones: ["Bilateral Lower Zones", "Bilateral Mid Zones", "Subpleural Mantle"],
-        clinicalSummary: "Severe end-stage Usual Interstitial Pneumonia (UIP) pattern with coarse honeycombing cysts, extensive traction bronchiectasis, profound parenchymal distortion, and marked restrictive lung volume loss."
-      };
-    }
-    return {
-      disease: "Pulmonary Fibrosis",
-      confidence: 0.946,
-      posteriorProbabilities: { Normal: 0.01, Pneumonia: 0.026, "Pulmonary Fibrosis": 0.946, Emphysema: 0.018 },
-      severityScore: 0.58,
-      severityGrade: "Moderate",
-      severityDescriptor: "Moderate Bilateral Basilar Reticular Network (0.58 Burden)",
-      affectedZones: ["Bilateral Lower Zones", "Subpleural Periphery", "Basilar Parenchyma"],
-      clinicalSummary: "Moderate bilateral subpleural and basilar reticular opacities with architectural distortion, traction bronchiectasis markers, and peripheral honeycombing pattern with restrictive lung volume loss."
-    };
-  }
-  if (targetSeverity === "mild") {
-    return {
-      disease: "Emphysema",
-      confidence: 0.918,
-      posteriorProbabilities: { Normal: 0.052, Pneumonia: 0.014, "Pulmonary Fibrosis": 0.016, Emphysema: 0.918 },
-      severityScore: 0.22,
-      severityGrade: "Mild",
-      severityDescriptor: "Mild Apical Hyperlucency & Oligemia (0.22 Burden)",
-      affectedZones: ["Bilateral Apical Regions", "Upper Lung Zones"],
-      clinicalSummary: "Early mild bilateral apical hyperlucency with slight attenuation of peripheral bronchovascular markings. Normal diaphragmatic contour and cardiothoracic diameter without air trapping."
-    };
-  }
-  if (targetSeverity === "severe") {
-    return {
-      disease: "Emphysema",
-      confidence: 0.965,
-      posteriorProbabilities: { Normal: 6e-3, Pneumonia: 0.012, "Pulmonary Fibrosis": 0.017, Emphysema: 0.965 },
-      severityScore: 0.82,
-      severityGrade: "Severe",
-      severityDescriptor: "Severe Bullous Hyperinflation & Vascular Depletion (0.82 Burden)",
-      affectedZones: ["Bilateral Whole Lung Fields", "Bilateral Diaphragmatic Domes", "Retrosternal Space"],
-      clinicalSummary: "Severe end-stage pulmonary emphysema with profound diffuse hyperlucency, massive peripheral vascular pruning, low completely flattened diaphragmatic domes below 11th rib, and barrel chest thoracic deformity."
-    };
-  }
-  return {
-    disease: "Emphysema",
-    confidence: 0.941,
-    posteriorProbabilities: { Normal: 0.018, Pneumonia: 0.016, "Pulmonary Fibrosis": 0.025, Emphysema: 0.941 },
-    severityScore: 0.52,
-    severityGrade: "Moderate",
-    severityDescriptor: "Moderate Bilateral Hyperinflation (0.52 Burden)",
-    affectedZones: ["Bilateral Upper Zones", "Apical Parenchyma", "Diaphragmatic Bases"],
-    clinicalSummary: "Moderate bilateral lung hyperlucency with vascular attenuation in the upper lobes. Hyperinflated thoracic cage with flattened hemidiaphragms, widened intercostal rib spaces, and increased retrosternal clear space."
-  };
-}
 app.post("/api/analyze-case", async (req, res) => {
   try {
     const { disease, confidence, severityScore, diseaseFeatures, heatmapType, patientId, clinicalNotes } = req.body;
@@ -904,6 +863,7 @@ async function startServer() {
   }
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`LungDeepNet Server running on http://localhost:${PORT}`);
+    ensureInferenceServer().catch((err) => console.warn("[LungDeepNet Engine] Daemon spawn warning:", err));
   });
 }
 startServer();

@@ -9,6 +9,15 @@ coverage/
 __pycache__/
 *.py[cod]
 lungdeepnet_bundle.zip
-checkpoints/*.pth
+
+# Large dataset folders (downloaded via scripts)
+data/dataset_40k/
+data/opensource_cohort/
+
+# Checkpoint rules: allow best_model.pth (32MB) and classifier.pkl
+checkpoints/*.part
+checkpoints/xrv_linear_probe.pkl
+!checkpoints/best_model.pth
+!checkpoints/lungdeepnet_classifier.pkl
 !checkpoints/.gitkeep
 
